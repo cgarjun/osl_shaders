@@ -44,9 +44,9 @@ float stroke_field(point p, vector dir, float scale, float stretch,
     vector b1 = normalize(cross(d, helper));
     vector b2 = cross(d, b1);
 
-    vector v = vector(p);
+    vector pv = vector(p);
     // Stroke space: long along d, short across it
-    point q = point(dot(v, d) / max(stretch, 0.001), dot(v, b1), dot(v, b2)) * scale;
+    point q = point(dot(pv, d) / max(stretch, 0.001), dot(pv, b1), dot(pv, b2)) * scale;
 
     // Wobble the coordinates so dab edges are irregular, not grid-aligned
     vector w = vector(noise("perlin", q * 0.7 + vector(1.7, 9.2, 3.1)),
@@ -126,20 +126,20 @@ shader PainterlySurface(
     vector L  = normalize(transform("world", "common", LightDirection));
     vector Up = normalize(transform("world", "common", UpAxis));
 
-    point Ps = transform(StrokeSpace, P);
+    point Pstroke = transform(StrokeSpace, P);
 
     // --- Brush strokes: main direction + a weaker crossing layer ----------
     float dabA, dabB;
-    float sA = stroke_field(Ps, StrokeDirection, StrokeScale, StrokeStretch,
+    float sA = stroke_field(Pstroke, StrokeDirection, StrokeScale, StrokeStretch,
                             StrokeWarp, dabA);
     vector crossDir = cross(normalize(StrokeDirection), vector(0.3, 0.9, 0.2));
-    float sB = stroke_field(Ps + vector(13.1, 7.7, 2.9), crossDir,
+    float sB = stroke_field(Pstroke + vector(13.1, 7.7, 2.9), crossDir,
                             StrokeScale * 1.7, StrokeStretch * 0.8,
                             StrokeWarp, dabB);
     float strokes = mix(sA, sB, 0.35);
 
     // Low-frequency variation (like a painter mixing slightly different paint)
-    float large = fbm(Ps * (StrokeScale * 0.15), 3);
+    float large = fbm(Pstroke * (StrokeScale * 0.15), 3);
 
     // --- Light term ------------------------------------------------------
     float NdotL = dot(Nn, L);
@@ -153,7 +153,7 @@ shader PainterlySurface(
 
     float light = smoothstep(-Softness, Softness, lit) * shadow;
     if (Bands > 1) {
-        float b = (float)Bands;
+        float b = float(Bands);
         light = floor(light * (b - 1.0) + 0.5) / (b - 1.0);
     }
 
